@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 public class KafkaProducerMapper {
 
     public static KafkaProducerRequest mapFromRequest(final String topic, final String brokerList, final PublishRequest request) {
-        return new KafkaProducerRequest(topic, brokerList, request.getValue());
+        return new KafkaProducerRequest(topic, brokerList, request.getValue(), request.getHeaders());
     }
 
 }

@@ -40,6 +40,7 @@ public class KafkaProducerService {
 
         try {
             var record = new ProducerRecord<String, String>(request.getTopicName(), null, mapper.writeValueAsString(request.getValue()));
+            request.getHeaders().forEach((k, v) -> record.headers().add(k, v.getBytes()));
             producer.send(record).get(10, TimeUnit.SECONDS);
         } finally {
             producer.close();

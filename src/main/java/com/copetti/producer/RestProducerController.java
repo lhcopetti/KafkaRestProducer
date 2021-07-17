@@ -6,8 +6,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.concurrent.ExecutionException;
@@ -22,11 +24,17 @@ public class RestProducerController {
     private final KafkaProducerService producer;
 
     @PostMapping("/{destination-topic}")
-    public void publish(
+    @ResponseBody
+    public PublishRequest publish(
         @PathVariable("destination-topic") String topic,
-        @RequestHeader("X-KafkaRest-BrokerList") String brokerList
+        @RequestHeader("X-KafkaRest-BrokerList") String brokerList,
+        @RequestBody PublishRequest request
                        ) throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
         log.info("Publishing to {}", topic);
-        producer.publish(brokerList, topic);
+        log.info("Body is: {}", request);
+
+        var producerRequest = KafkaProducerMapper.mapFromRequest(topic, brokerList, request);
+        producer.publish(producerRequest);
+        return request;
     }
 }

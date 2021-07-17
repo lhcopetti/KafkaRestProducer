@@ -20,6 +20,13 @@ public class KafkaProducerService {
 
     private final ObjectMapper mapper;
 
+    public void publish(KafkaProducerRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
+        var props = properties(request.getBrokerList());
+        try (var producer = new KafkaProducer<String, String>(props)) {
+            produceMessage(producer, request);
+        }
+    }
+
     private static Properties properties(String broker) {
         var properties = new Properties();
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
@@ -29,22 +36,24 @@ public class KafkaProducerService {
         return properties;
     }
 
-    public void publish(KafkaProducerRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
-        Properties props = properties(request.getBrokerList());
-        var producer = new KafkaProducer<String, String>(props);
-        produceMessage(request, producer);
+    private void produceMessage(final KafkaProducer<String, String> producer,
+        final KafkaProducerRequest request) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
+        ProducerRecord<String, String> message = createKafkaRecord(request);
+        addKafkaHeaders(message, request);
+        sendKafkaRecord(producer, message);
     }
 
-    private void produceMessage(final KafkaProducerRequest request,
-        final KafkaProducer<String, String> producer) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
+    private ProducerRecord<String, String> createKafkaRecord(final KafkaProducerRequest request) throws JsonProcessingException {
+        return new ProducerRecord<>(request.getTopicName(), null, mapper.writeValueAsString(request.getValue()));
+    }
 
-        try {
-            var record = new ProducerRecord<String, String>(request.getTopicName(), null, mapper.writeValueAsString(request.getValue()));
-            request.getHeaders().forEach((k, v) -> record.headers().add(k, v.getBytes()));
-            producer.send(record).get(10, TimeUnit.SECONDS);
-        } finally {
-            producer.close();
-        }
+    private <K, V> void addKafkaHeaders(final ProducerRecord<K, V> message, final KafkaProducerRequest request) {
+        request.getHeaders().forEach((k, v) -> message.headers().add(k, v.getBytes()));
+    }
+
+    private <K, V> void sendKafkaRecord(final KafkaProducer<K, V> producer,
+        final ProducerRecord<K, V> message) throws ExecutionException, InterruptedException, TimeoutException {
+        producer.send(message).get(10, TimeUnit.SECONDS);
     }
 
 }

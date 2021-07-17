@@ -29,11 +29,17 @@ public class KafkaProducerService {
         return properties;
     }
 
-    public void publish(String brokerList, String topic) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
-        Properties props = properties(brokerList);
+    public void publish(KafkaProducerRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
+        Properties props = properties(request.getBrokerList());
         var producer = new KafkaProducer<String, String>(props);
+        produceMessage(request, producer);
+    }
+
+    private void produceMessage(final KafkaProducerRequest request,
+        final KafkaProducer<String, String> producer) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
+
         try {
-            var record = new ProducerRecord<String, String>(topic, null, mapper.writeValueAsString("the message to send"));
+            var record = new ProducerRecord<String, String>(request.getTopicName(), null, mapper.writeValueAsString(request.getValue()));
             producer.send(record).get(10, TimeUnit.SECONDS);
         } finally {
             producer.close();

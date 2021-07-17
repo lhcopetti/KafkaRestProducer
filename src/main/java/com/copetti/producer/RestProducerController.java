@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,13 +21,12 @@ public class RestProducerController {
 
     private final KafkaProducerService producer;
 
-    @PostMapping
-    public void empty() {
-        log.info("Publishing to EMPTY");
-    }
     @PostMapping("/{destination-topic}")
-    public void publish(@PathVariable("destination-topic") String topic) throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
+    public void publish(
+        @PathVariable("destination-topic") String topic,
+        @RequestHeader("X-KafkaRest-BrokerList") String brokerList
+                       ) throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
         log.info("Publishing to {}", topic);
-        producer.publish(topic);
+        producer.publish(brokerList, topic);
     }
 }

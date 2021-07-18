@@ -17,9 +17,7 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import org.testcontainers.utility.DockerImageName;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ApiApplicationTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final KafkaMessageConsumer kafkaConsumer = new KafkaMessageConsumer();
 
     @LocalServerPort
     private int localServerPort;
@@ -40,17 +39,42 @@ public class ApiApplicationTest {
     @AllArgsConstructor
     @NoArgsConstructor
     private static class SimpleValuePayloadTest {
+
         String eventName;
         int eventId;
+
     }
 
     @Test
     public void whenValuePayload_ExpectToBeSentToKafka() throws IOException {
-        var topicName = "simple-value-payload";
-        var request = new PublishRequest();
+        var topicName = "just-payload";
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
-        request.setValue(payload);
+        var request = new PublishRequest(null, payload);
 
+        makePost(topicName, request);
+
+        KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
+        var objOnKafka = mapper.readValue(msg.getValue(), SimpleValuePayloadTest.class);
+        assertThat(objOnKafka).isEqualTo(payload);
+    }
+
+    @Test
+    public void whenPayloadWithHeaders_ExpectToBeSentToKafkaWithHeaders() throws IOException {
+        var topicName = "payload-with-header";
+        var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
+        var headers = Map.of("key1", "value1", "key2", "value2");
+        var request = new PublishRequest(headers, payload);
+
+        makePost(topicName, request);
+
+        KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
+
+        assertThat(msg.getHeaders()).isEqualTo(headers);
+        var objOnKafka = mapper.readValue(msg.getValue(), SimpleValuePayloadTest.class);
+        assertThat(objOnKafka).isEqualTo(payload);
+    }
+
+    private void makePost(final String topicName, final PublishRequest request) {
         given()
             .contentType("application/json")
             .header("X-KafkaRest-BrokerList", getBrokerList())
@@ -58,13 +82,6 @@ public class ApiApplicationTest {
             .post(getUrl(topicName))
             .then()
             .statusCode(200);
-
-        KafkaMessageConsumer consumer = new KafkaMessageConsumer();
-        List<KafkaMessage> messages = consumer.consumeMessages(getBrokerList(), topicName);
-        assertThat(messages.size()).isEqualTo(1);
-        var payloadOnKafka = messages.get(0).getValue();
-        var objOnKafka = mapper.readValue(payloadOnKafka, SimpleValuePayloadTest.class);
-        assertThat(objOnKafka).isEqualTo(payload);
     }
 
     private String getUrl(String topicName) {

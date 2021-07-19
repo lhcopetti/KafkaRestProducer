@@ -2,7 +2,7 @@ package com.copetti;
 
 import com.copetti.consumer.KafkaMessage;
 import com.copetti.consumer.KafkaMessageConsumer;
-import com.copetti.producer.PublishRequest;
+import com.copetti.controller.PublishRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -49,9 +49,8 @@ public class ApiApplicationTest {
     public void whenValuePayload_ExpectToBeSentToKafka() throws IOException {
         var topicName = "just-payload";
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
-        var request = new PublishRequest(null, payload);
 
-        makePost(topicName, request);
+        makePost(new PublishRequest(topicName, null, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
         var objOnKafka = mapper.readValue(msg.getValue(), SimpleValuePayloadTest.class);
@@ -63,9 +62,8 @@ public class ApiApplicationTest {
         var topicName = "payload-with-header";
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
         var headers = Map.of("key1", "value1", "key2", "value2");
-        var request = new PublishRequest(headers, payload);
 
-        makePost(topicName, request);
+        makePost(new PublishRequest(topicName, headers, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
 
@@ -74,18 +72,14 @@ public class ApiApplicationTest {
         assertThat(objOnKafka).isEqualTo(payload);
     }
 
-    private void makePost(final String topicName, final PublishRequest request) {
+    private void makePost(final PublishRequest request) {
         given()
             .contentType("application/json")
             .header("X-KafkaRest-BrokerList", getBrokerList())
             .body(request)
-            .post(getUrl(topicName))
+            .post("http://localhost:" + localServerPort + "/v1/publish/")
             .then()
             .statusCode(200);
-    }
-
-    private String getUrl(String topicName) {
-        return "http://localhost:" + localServerPort + "/v1/publish/" + topicName;
     }
 
     private String getBrokerList() {

@@ -1,4 +1,4 @@
-package com.copetti.producer;
+package com.copetti.controller;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +10,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PublishRequest {
+    private String topic;
     private Map<String, String> headers;
     private Object value;
 }

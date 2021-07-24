@@ -13,9 +13,14 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>KafkaRestProducer</name>
 	<description>A Kafka producer over a REST API</description>
+
 	<properties>
 		<java.version>11</java.version>
+		<sonar.projectKey>lhcopetti_KafkaRestProducer</sonar.projectKey>
+		<sonar.organization>lhcopetti</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

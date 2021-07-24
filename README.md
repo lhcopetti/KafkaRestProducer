@@ -2,6 +2,9 @@
 # KafkaRestProducer
 
 [![Java CI](https://github.com/lhcopetti/KafkaRestProducer/actions/workflows/action.yml/badge.svg)](https://github.com/lhcopetti/KafkaRestProducer/actions/workflows/action.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=lhcopetti_KafkaRestProducer&metric=alert_status)](https://sonarcloud.io/dashboard?id=lhcopetti_KafkaRestProducer)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=lhcopetti_KafkaRestProducer&metric=coverage)](https://sonarcloud.io/dashboard?id=lhcopetti_KafkaRestProducer)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=lhcopetti_KafkaRestProducer&metric=ncloc)](https://sonarcloud.io/dashboard?id=lhcopetti_KafkaRestProducer)
 
 Produce JSON messages to a Kafka Broker using a simple REST API
 

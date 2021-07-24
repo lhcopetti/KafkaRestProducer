@@ -1,4 +1,8 @@
+
 # KafkaRestProducer
+
+[![Java CI](https://github.com/lhcopetti/KafkaRestProducer/actions/workflows/action.yml/badge.svg)](https://github.com/lhcopetti/KafkaRestProducer/actions/workflows/action.yml)
+
 Produce JSON messages to a Kafka Broker using a simple REST API
 
 This project will allow you to produce a payload to a Kafka topic using a JSON body like this:

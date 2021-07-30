@@ -52,11 +52,24 @@ public class ApiApplicationTest {
         var topicName = "just-payload";
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
 
-        makePost(new PublishRequest(topicName, null, payload));
+        makePost(new PublishRequest(null, topicName, null, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
         var objOnKafka = mapper.readValue(msg.getValue(), SimpleValuePayloadTest.class);
         assertThat(objOnKafka).isEqualTo(payload);
+    }
+
+    @Test
+    public void whenMessageContainsKey_ExpectToBeSentWithKey() {
+        var topicName = "publishing-with-key";
+        var key = "the-key";
+        var payload = new SimpleValuePayloadTest("whatever", 33);
+
+        makePost(new PublishRequest(key, topicName, null, payload));
+
+        KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
+
+        assertThat(msg.getKey()).isEqualTo(key);
     }
 
     @Test
@@ -65,7 +78,7 @@ public class ApiApplicationTest {
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
         var headers = Map.of("key1", "value1", "key2", "value2");
 
-        makePost(new PublishRequest(topicName, headers, payload));
+        makePost(new PublishRequest(null, topicName, headers, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
 

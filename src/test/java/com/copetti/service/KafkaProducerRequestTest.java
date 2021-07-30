@@ -8,7 +8,7 @@ public class KafkaProducerRequestTest {
 
     @Test
     public void givenNullHeaders_expectEmptyMapToBeReturned() {
-        KafkaProducerRequest req = new KafkaProducerRequest("a", "b", "value", null);
+        KafkaProducerRequest req = new KafkaProducerRequest(null, "a", "b", "value", null);
         assertThat(req.getHeaders()).isNotNull();
     }
 }

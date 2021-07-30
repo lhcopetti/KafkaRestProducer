@@ -10,6 +10,7 @@ import java.util.Map;
 @Builder
 @ToString
 public class KafkaMessage {
+    private String key;
     private String value;
     private Map<String, String> headers;
 }

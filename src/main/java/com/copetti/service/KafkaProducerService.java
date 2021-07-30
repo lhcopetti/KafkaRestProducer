@@ -44,7 +44,7 @@ public class KafkaProducerService {
     }
 
     private ProducerRecord<String, String> createKafkaRecord(final KafkaProducerRequest request) throws JsonProcessingException {
-        return new ProducerRecord<>(request.getTopicName(), null, mapper.writeValueAsString(request.getValue()));
+        return new ProducerRecord<>(request.getTopicName(), request.getKey(), mapper.writeValueAsString(request.getValue()));
     }
 
     private <K, V> void addKafkaHeaders(final ProducerRecord<K, V> message, final KafkaProducerRequest request) {

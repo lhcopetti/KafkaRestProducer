@@ -56,6 +56,7 @@ public class KafkaMessageConsumer {
 
             poll.forEach(c -> {
                 var msg = KafkaMessage.builder()
+                    .key(c.key())
                     .value(c.value())
                     .headers(collectHeaders(c))
                     .build();

@@ -20,11 +20,13 @@ import java.util.concurrent.TimeoutException;
 @RequiredArgsConstructor
 public class RestProducerController {
 
+    static final String HEADER_BROKER_LIST = "X-KafkaRest-BrokerList";
+
     private final KafkaProducerService producer;
 
     @PostMapping
     public void publish(
-        @RequestHeader("X-KafkaRest-BrokerList") String brokerList,
+        @RequestHeader(HEADER_BROKER_LIST) String brokerList,
         @Valid @RequestBody PublishRequest request
                        ) throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
         log.info("Publishing message to brokerList: {}", brokerList);

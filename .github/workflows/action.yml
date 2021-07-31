@@ -49,3 +49,9 @@ jobs:
               with:
                   username: ${{secrets.DOCKER_LOGIN}}
                   password: ${{secrets.DOCKER_TOKEN}}
+
+            - name: Build and push
+              uses: docker/build-push-action@v2
+              with:
+                  push: true
+                  tags: ${{secrets.DOCKER_LOGIN}}/kafka-rest-producer:latest

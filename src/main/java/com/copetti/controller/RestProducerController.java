@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -24,7 +25,7 @@ public class RestProducerController {
     @PostMapping
     public void publish(
         @RequestHeader("X-KafkaRest-BrokerList") String brokerList,
-        @RequestBody PublishRequest request
+        @Valid @RequestBody PublishRequest request
                        ) throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
         log.info("Publishing message to brokerList: {}", brokerList);
         log.info("Public Request: {}", request);

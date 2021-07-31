@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
 import java.util.Map;
 
 @Data
@@ -11,6 +12,8 @@ import java.util.Map;
 @NoArgsConstructor
 public class PublishRequest {
     private String key;
+
+    @NotBlank
     private String topic;
     private Map<String, String> headers;
     private Object value;

@@ -1,6 +1,6 @@
 package com.copetti.controller;
 
-import com.copetti.service.KafkaProducerService;
+import com.copetti.core.KafkaRestService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RestProducerControllerTest {
 
     @MockBean
-    KafkaProducerService service;
+    KafkaRestService service;
 
     @Autowired
     RestProducerController controller;

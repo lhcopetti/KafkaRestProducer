@@ -1,6 +1,6 @@
 package com.copetti.controller;
 
-import com.copetti.service.KafkaProducerService;
+import com.copetti.core.KafkaRestService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ public class RestProducerController {
 
     static final String HEADER_BROKER_LIST = "X-KafkaRest-BrokerList";
 
-    private final KafkaProducerService producer;
+    private final KafkaRestService service;
 
     @PostMapping
     public void publish(
@@ -33,6 +33,7 @@ public class RestProducerController {
         log.info("Public Request: {}", request);
 
         var producerRequest = KafkaProducerMapper.mapFromRequest(brokerList, request);
-        producer.publish(producerRequest);
+        service.publish(producerRequest);
+        log.info("Request published successfully to '{}'", request.getTopic());
     }
 }

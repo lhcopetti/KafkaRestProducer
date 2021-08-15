@@ -1,5 +1,6 @@
-package com.copetti.service;
+package com.copetti.provider;
 
+import com.copetti.core.KafkaRestRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -7,20 +8,20 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-@Service
 @RequiredArgsConstructor
-public class KafkaProducerService {
+@Component
+public class KafkaMessageProducer {
 
     private final ObjectMapper mapper;
 
-    public void publish(KafkaProducerRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
+    public void publish(KafkaRestRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
         var props = properties(request.getBrokerList());
         try (var producer = new KafkaProducer<String, String>(props)) {
             produceMessage(producer, request);
@@ -37,17 +38,17 @@ public class KafkaProducerService {
     }
 
     private void produceMessage(final KafkaProducer<String, String> producer,
-        final KafkaProducerRequest request) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
+        final KafkaRestRequest request) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
         ProducerRecord<String, String> message = createKafkaRecord(request);
         addKafkaHeaders(message, request);
         sendKafkaRecord(producer, message);
     }
 
-    private ProducerRecord<String, String> createKafkaRecord(final KafkaProducerRequest request) throws JsonProcessingException {
+    private ProducerRecord<String, String> createKafkaRecord(final KafkaRestRequest request) throws JsonProcessingException {
         return new ProducerRecord<>(request.getTopicName(), request.getKey(), mapper.writeValueAsString(request.getValue()));
     }
 
-    private <K, V> void addKafkaHeaders(final ProducerRecord<K, V> message, final KafkaProducerRequest request) {
+    private <K, V> void addKafkaHeaders(final ProducerRecord<K, V> message, final KafkaRestRequest request) {
         request.getHeaders().forEach((k, v) -> message.headers().add(k, v.getBytes()));
     }
 

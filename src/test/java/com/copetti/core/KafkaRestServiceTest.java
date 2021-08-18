@@ -1,7 +1,6 @@
 package com.copetti.core;
 
 import com.copetti.provider.KafkaMessageProducer;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -11,10 +10,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
+import static com.copetti.core.KafkaRestService.REPEAT_PUBLISH_TAG;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,7 +27,7 @@ class KafkaRestServiceTest {
     private @Captor ArgumentCaptor<KafkaRestRequest> captor;
 
     @Test
-    void givenHeaderWithRandomUUIDRequest_ExpectARandomUUIDToBeGenerated() throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
+    void givenHeaderWithRandomUUIDRequest_ExpectARandomUUIDToBeGenerated() throws Exception {
         var req = KafkaRestRequest.builder()
             .header("any-header", "${UUID.randomUUID}")
             .build();
@@ -38,5 +38,18 @@ class KafkaRestServiceTest {
         KafkaRestRequest captured = captor.getValue();
         var validRandomUUID = captured.getHeaders().get("any-header");
         assertDoesNotThrow(() -> UUID.fromString(validRandomUUID));
+    }
+
+    @Test
+    void givenHeaderWithRepeatInstruction_ExpectPublishToBeCalledThatManyTimes() throws Exception {
+        var req = KafkaRestRequest.builder()
+            .header(REPEAT_PUBLISH_TAG, "3")
+            .build();
+
+        service.publish(req);
+
+        verify(producer, times(3)).publish(captor.capture());
+        KafkaRestRequest captured = captor.getValue();
+        assertNull(captured.getHeaders().get(REPEAT_PUBLISH_TAG));
     }
 }

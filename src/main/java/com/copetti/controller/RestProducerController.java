@@ -1,6 +1,7 @@
 package com.copetti.controller;
 
 import com.copetti.core.KafkaRestService;
+import com.copetti.exception.InvalidRepeatValueException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,7 +26,7 @@ public class RestProducerController {
     public void publish(
         @RequestHeader(HEADER_BROKER_LIST) String brokerList,
         @Valid @RequestBody PublishRequest request
-                       ) {
+                       ) throws InvalidRepeatValueException {
         log.info("Publishing message to brokerList: {}", brokerList);
         log.info("Public Request: {}", request);
 

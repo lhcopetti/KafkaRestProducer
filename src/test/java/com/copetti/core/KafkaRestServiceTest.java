@@ -1,5 +1,6 @@
 package com.copetti.core;
 
+import com.copetti.exception.InvalidRepeatValueException;
 import com.copetti.provider.KafkaMessageProducer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,8 @@ import java.util.UUID;
 import static com.copetti.core.KafkaRestService.REPEAT_PUBLISH_TAG;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -51,5 +54,16 @@ class KafkaRestServiceTest {
         verify(producer, times(3)).publish(captor.capture());
         KafkaRestRequest captured = captor.getValue();
         assertNull(captured.getHeaders().get(REPEAT_PUBLISH_TAG));
+    }
+
+    @Test
+    void givenHeaderWithRepeatInstructionWithInvalidValue_ExpectExplicitInvalidRepeatValueException() throws Exception {
+        var req = KafkaRestRequest.builder()
+            .header(REPEAT_PUBLISH_TAG, "this-is-not-a-number")
+            .build();
+
+        assertThrows(InvalidRepeatValueException.class, () -> service.publish(req));
+
+        verify(producer, never()).publish(captor.capture());
     }
 }

@@ -1,37 +1,72 @@
 package com.copetti.core;
 
 import com.copetti.provider.KafkaMessageProducer;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @RequiredArgsConstructor
 public class KafkaRestService {
 
-    private static final String RANDOM_UUID_TAG = "${UUID.randomUUID}";
+    public static final String KAFKA_REST_PREFIX_TAG = "KafkaRest-";
+
+    public static final String REPEAT_PUBLISH_TAG = KAFKA_REST_PREFIX_TAG + "Repeat";
+    public static final int REPEAT_DEFAULT_VALUE = 1;
+
+    public static final String RANDOM_UUID_TAG = "${UUID.randomUUID}";
 
     private final KafkaMessageProducer producer;
 
-    public void publish(KafkaRestRequest request) throws ExecutionException, JsonProcessingException, InterruptedException, TimeoutException {
-        var enriched = enrichRequest(request);
-        producer.publish(enriched);
+    public void publish(KafkaRestRequest request) {
+        var processed = processRequest(request);
+
+        IntStream.range(0, processed.getTimes())
+            .parallel()
+            .forEach(ign -> produce(processed.getRequest()));
     }
 
-    private KafkaRestRequest enrichRequest(KafkaRestRequest request) {
-        return KafkaRestRequest.builder()
+    private void produce(final KafkaRestRequest request) {
+        try {
+            producer.publish(request);
+        } catch (InterruptedException e) {
+            log.error("The routine has been interrupted while publishing request | topic: {}, error: {}", request.getTopicName(), e.getMessage(), e);
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.error("Exception occurred while publishing request | topic: {}, error: {}", request.getTopicName(), e.getMessage(), e);
+        }
+    }
+
+    private KafkaRestResult processRequest(KafkaRestRequest request) {
+        var req = KafkaRestRequest.builder()
             .key(request.getKey())
             .value(request.getValue())
-            .headers(enrichHeader(request.getHeaders()))
+            .headers(processHeaders(request.getHeaders()))
             .brokerList(request.getBrokerList())
             .topicName(request.getTopicName())
             .build();
+        var times = getRepeat(request);
+
+        return new KafkaRestResult(times, req);
+    }
+
+    private int getRepeat(final KafkaRestRequest request) {
+        Map<String, String> headers = request.getHeaders();
+        String repeat = headers.get(REPEAT_PUBLISH_TAG);
+
+        if (null == repeat)
+            return REPEAT_DEFAULT_VALUE;
+
+        return Integer.parseInt(repeat);
+    }
+
+    private Map<String, String> processHeaders(final Map<String, String> headers) {
+        Map<String, String> enriched = enrichHeader(headers);
+        return stripKafkaRestHeaders(enriched);
     }
 
     private Map<String, String> enrichHeader(final Map<String, String> headers) {
@@ -47,6 +82,11 @@ public class KafkaRestService {
         var uuid = UUID.randomUUID().toString();
         log.info("Generating an UUID for header named '{}' = {}", entry.getKey(), uuid);
         return Map.entry(entry.getKey(), UUID.randomUUID().toString());
+    }
+
+    private Map<String, String> stripKafkaRestHeaders(final Map<String, String> enriched) {
+        enriched.keySet().removeIf(key -> key.startsWith(KAFKA_REST_PREFIX_TAG));
+        return enriched;
     }
 
 }

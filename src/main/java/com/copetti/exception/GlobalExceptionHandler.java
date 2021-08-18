@@ -37,6 +37,18 @@ public class GlobalExceptionHandler {
         return buildResponse(err, req);
     }
 
+    @ExceptionHandler(value = {InvalidRepeatValueException.class})
+    public ResponseEntity<ApiError> handleInvalidRepeatValueException(InvalidRepeatValueException ex, ServletWebRequest req) {
+        var status = HttpStatus.BAD_REQUEST;
+
+        var err = ApiError.builder()
+            .error(status.getReasonPhrase())
+            .httpStatus(status.value())
+            .errorMessage(ex.getMessage());
+
+        return buildResponse(err, req);
+    }
+
     private static ResponseEntity<ApiError> buildResponse(ApiError.ApiErrorBuilder builder, ServletWebRequest req) {
         var apiError = builder
             .path(req.getRequest().getRequestURI())

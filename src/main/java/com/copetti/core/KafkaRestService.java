@@ -1,5 +1,6 @@
 package com.copetti.core;
 
+import com.copetti.exception.InvalidRepeatValueException;
 import com.copetti.provider.KafkaMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ public class KafkaRestService {
 
     private final KafkaMessageProducer producer;
 
-    public void publish(KafkaRestRequest request) {
+    public void publish(KafkaRestRequest request) throws InvalidRepeatValueException {
         var processed = processRequest(request);
 
         IntStream.range(0, processed.getTimes())
@@ -41,7 +42,7 @@ public class KafkaRestService {
         }
     }
 
-    private KafkaRestResult processRequest(KafkaRestRequest request) {
+    private KafkaRestResult processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
         var req = KafkaRestRequest.builder()
             .key(request.getKey())
             .value(request.getValue())
@@ -54,14 +55,18 @@ public class KafkaRestService {
         return new KafkaRestResult(times, req);
     }
 
-    private int getRepeat(final KafkaRestRequest request) {
+    private int getRepeat(final KafkaRestRequest request) throws InvalidRepeatValueException {
         Map<String, String> headers = request.getHeaders();
         String repeat = headers.get(REPEAT_PUBLISH_TAG);
 
         if (null == repeat)
             return REPEAT_DEFAULT_VALUE;
 
-        return Integer.parseInt(repeat);
+        try {
+            return Integer.parseInt(repeat);
+        } catch (NumberFormatException e) {
+            throw new InvalidRepeatValueException(repeat);
+        }
     }
 
     private Map<String, String> processHeaders(final Map<String, String> headers) {

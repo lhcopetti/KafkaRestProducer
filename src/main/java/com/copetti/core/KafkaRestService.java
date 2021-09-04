@@ -4,11 +4,13 @@ import com.copetti.exception.InvalidRepeatValueException;
 import com.copetti.provider.KafkaMessageProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -26,9 +28,9 @@ public class KafkaRestService {
     public void publish(KafkaRestRequest request) throws InvalidRepeatValueException {
         var processed = processRequest(request);
 
-        IntStream.range(0, processed.getTimes())
+        processed.stream()
             .parallel()
-            .forEach(ign -> produce(processed.getRequest()));
+            .forEach(this::produce);
     }
 
     private void produce(final KafkaRestRequest request) {
@@ -42,17 +44,23 @@ public class KafkaRestService {
         }
     }
 
-    private KafkaRestResult processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
-        var req = KafkaRestRequest.builder()
-            .key(request.getKey())
-            .value(request.getValue())
-            .headers(processHeaders(request.getHeaders()))
-            .brokerList(request.getBrokerList())
-            .topicName(request.getTopicName())
-            .build();
+    private List<KafkaRestRequest> processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
         var times = getRepeat(request);
 
-        return new KafkaRestResult(times, req);
+        val requests = new ArrayList<KafkaRestRequest>();
+
+        for (var i = 0; i < times; ++i) {
+            val req = KafkaRestRequest.builder()
+                .key(request.getKey())
+                .value(request.getValue())
+                .headers(processHeaders(request.getHeaders()))
+                .brokerList(request.getBrokerList())
+                .topicName(request.getTopicName())
+                .build();
+            requests.add(req);
+        }
+
+        return requests;
     }
 
     private int getRepeat(final KafkaRestRequest request) throws InvalidRepeatValueException {

@@ -2,6 +2,7 @@ package com.copetti.core;
 
 import com.copetti.exception.InvalidRepeatValueException;
 import com.copetti.provider.KafkaMessageProducer;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -14,6 +15,7 @@ import java.util.UUID;
 
 import static com.copetti.core.KafkaRestService.REPEAT_PUBLISH_TAG;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
@@ -32,7 +34,7 @@ class KafkaRestServiceTest {
     @Test
     void givenHeaderWithRandomUUIDRequest_ExpectARandomUUIDToBeGenerated() throws Exception {
         var req = KafkaRestRequest.builder()
-            .header("any-header", "${UUID.randomUUID}")
+            .header("any-header", KafkaRestService.RANDOM_UUID_TAG)
             .build();
 
         service.publish(req);
@@ -41,6 +43,23 @@ class KafkaRestServiceTest {
         KafkaRestRequest captured = captor.getValue();
         var validRandomUUID = captured.getHeaders().get("any-header");
         assertDoesNotThrow(() -> UUID.fromString(validRandomUUID));
+    }
+
+    @Test
+    void givenRandomUUIDHeaderAndRepeatGreaterThanOne_ExpectDifferentUUIDForEachPublish() throws Exception {
+        var req = KafkaRestRequest.builder()
+            .header("any-header", KafkaRestService.RANDOM_UUID_TAG)
+            .header(REPEAT_PUBLISH_TAG, "2")
+            .build();
+
+        service.publish(req);
+
+        verify(producer, times(2)).publish(captor.capture());
+        val captured = captor.getAllValues();
+
+        var idFirst = captured.get(0).getHeaders().get("any-header");
+        var idSecond = captured.get(1).getHeaders().get("any-header");
+        assertNotEquals(idFirst, idSecond);
     }
 
     @Test

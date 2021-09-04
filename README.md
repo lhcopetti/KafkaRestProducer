@@ -13,7 +13,8 @@ This project will allow you to produce a payload to a Kafka topic using a JSON b
 {
     "topic": "your-topic-name",
     "headers": {
-        "uniqueId": "maybe a UUIDv4"
+        "KafkaRest-Repeat": 2,
+        "uniqueId": "${UUID.randomUUID}"
     },
     "value": {
         "fieldOne": "valueOne",
@@ -24,6 +25,19 @@ This project will allow you to produce a payload to a Kafka topic using a JSON b
     }
 }
 ```
+
+#### Parameters
+
+##### Headers
+
+* UUID
+
+Use `${UUID.randomUUID}` to have KRP automatically generate a random UUID when publishing the payload to kafka
+
+* Repeat
+
+Use `KafkaRest-Producer` header key to specify how many times the message should be published (default is 1)
+
 
 ### User Guide
 

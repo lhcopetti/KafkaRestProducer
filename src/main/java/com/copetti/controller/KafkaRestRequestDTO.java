@@ -12,7 +12,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class PublishRequest {
+public class KafkaRestRequestDTO {
     private String key;
 
     @NotBlank

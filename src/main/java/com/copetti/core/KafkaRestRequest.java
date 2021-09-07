@@ -3,12 +3,14 @@ package com.copetti.core;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
+import lombok.ToString;
 
 import java.util.Collections;
 import java.util.Map;
 
 @Getter
 @Builder
+@ToString
 public class KafkaRestRequest {
     private final String key;
     private final String topicName;

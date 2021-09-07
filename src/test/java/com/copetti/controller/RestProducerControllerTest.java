@@ -1,46 +1,84 @@
 package com.copetti.controller;
 
+import com.copetti.config.MapperConfiguration;
+import com.copetti.core.KafkaRestRequest;
 import com.copetti.core.KafkaRestService;
 import com.copetti.exception.InvalidRepeatValueException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.val;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.util.Collections;
 import java.util.Map;
 
 import static com.copetti.controller.RestProducerController.HEADER_BROKER_LIST;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ExtendWith(MockitoExtension.class)
 @ExtendWith(SpringExtension.class)
 @WebMvcTest
+@Import(MapperConfiguration.class)
 class RestProducerControllerTest {
 
     @MockBean
     KafkaRestService service;
 
     @Autowired
-    RestProducerController controller;
+    ObjectMapper mapper;
 
     @Autowired
     MockMvc mvc;
+
+    @Captor
+    ArgumentCaptor<KafkaRestRequest> captor;
+
+    @Test
+    void givenRequestWithCorrectParameters_ExpectUseCaseToBeCalled() throws Exception {
+        var path = "/v1/publish";
+        val body = PublishRequest.builder()
+            .key("the-key")
+            .topic("the-topic")
+            .value("the-value")
+            .headers(Map.of("header-key", "header-value"))
+            .build();
+        mvc.perform(MockMvcRequestBuilders
+            .post(path)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(body))
+            .header(HEADER_BROKER_LIST, "the-broker-list")
+                   )
+            .andExpect(status().isOk());
+
+        verify(service).publish(captor.capture());
+
+        KafkaRestRequest value = captor.getValue();
+        assertThat(value)
+            .hasFieldOrPropertyWithValue("brokerList", "the-broker-list")
+            .hasFieldOrPropertyWithValue("key", "the-key")
+            .hasFieldOrPropertyWithValue("value", "the-value")
+            .hasFieldOrPropertyWithValue("headers.header-key", "header-value")
+            .hasFieldOrPropertyWithValue("topicName", "the-topic");
+    }
 
     @Test
     void givenRequestWithoutRequiredBrokerListHeader_expectBadRequestAndExplicitErrorMessage() throws Exception {

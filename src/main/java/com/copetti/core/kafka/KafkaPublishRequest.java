@@ -4,10 +4,12 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 
+import java.util.List;
+
 @Value
 @Builder
 public class KafkaPublishRequest {
     @NonNull String brokerList;
     @NonNull String topic;
-    @NonNull KafkaMessage message;
+    @NonNull List<KafkaMessage> messages;
 }

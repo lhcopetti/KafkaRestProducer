@@ -8,12 +8,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,10 +29,7 @@ public class KafkaRestService {
 
     public void publish(KafkaRestRequest request) throws InvalidRepeatValueException {
         var processed = processRequest(request);
-
-        processed.stream()
-            .parallel()
-            .forEach(this::produce);
+        produce(processed);
     }
 
     private void produce(final KafkaPublishRequest request) {
@@ -47,28 +43,27 @@ public class KafkaRestService {
         }
     }
 
-    private List<KafkaPublishRequest> processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
+    private KafkaPublishRequest processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
         var times = getRepeat(request);
 
-        val requests = new ArrayList<KafkaPublishRequest>();
+        val messages = IntStream
+            .range(0, times)
+            .mapToObj(index -> createMessage(request))
+            .collect(Collectors.toList());
 
+        return KafkaPublishRequest.builder()
+            .brokerList(request.getBrokerList())
+            .topic(request.getTopicName())
+            .messages(messages)
+            .build();
+    }
 
-        for (var i = 0; i < times; ++i) {
-            val req = KafkaPublishRequest.builder()
-                .brokerList(request.getBrokerList())
-                .topic(request.getTopicName())
-                .message(
-                    KafkaMessage.builder()
-                        .key(request.getKey())
-                        .value(request.getValue())
-                        .headers(processHeaders(request.getHeaders()))
-                        .build()
-                        )
-                .build();
-            requests.add(req);
-        }
-
-        return requests;
+    private KafkaMessage createMessage(KafkaRestRequest request) {
+        return KafkaMessage.builder()
+            .key(request.getKey())
+            .value(request.getValue())
+            .headers(processHeaders(request.getHeaders()))
+            .build();
     }
 
     private int getRepeat(final KafkaRestRequest request) throws InvalidRepeatValueException {

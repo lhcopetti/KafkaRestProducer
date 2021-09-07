@@ -14,13 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
 
+import static com.copetti.core.KafkaRestService.KAFKA_REST_PREFIX_TAG;
 import static com.copetti.core.KafkaRestService.REPEAT_PUBLISH_TAG;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +42,7 @@ class KafkaRestServiceTest {
 
         verify(producer).publish(captor.capture());
         val captured = captor.getValue();
-        var validRandomUUID = captured.getMessage().getHeaders().get("any-header");
+        var validRandomUUID = captured.getMessages().get(0).getHeaders().get("any-header");
         assertDoesNotThrow(() -> UUID.fromString(validRandomUUID));
     }
 
@@ -55,25 +55,44 @@ class KafkaRestServiceTest {
 
         service.publish(req);
 
-        verify(producer, times(2)).publish(captor.capture());
-        val captured = captor.getAllValues();
+        verify(producer).publish(captor.capture());
+        val captured = captor.getValue();
 
-        var idFirst = captured.get(0).getMessage().getHeaders().get("any-header");
-        var idSecond = captured.get(1).getMessage().getHeaders().get("any-header");
+        var idFirst = captured.getMessages().get(0).getHeaders().get("any-header");
+        var idSecond = captured.getMessages().get(1).getHeaders().get("any-header");
         assertNotEquals(idFirst, idSecond);
     }
 
     @Test
-    void givenHeaderWithRepeatInstruction_ExpectPublishToBeCalledThatManyTimes() throws Exception {
+    void givenHeaderWithRepeatInstruction_ExpectThatManyMessageToBePublished() throws Exception {
         var req = minimalRequest()
             .header(REPEAT_PUBLISH_TAG, "3")
             .build();
 
         service.publish(req);
 
-        verify(producer, times(3)).publish(captor.capture());
+        verify(producer).publish(captor.capture());
         val captured = captor.getValue();
-        assertNull(captured.getMessage().getHeaders().get(REPEAT_PUBLISH_TAG));
+        assertThat(captured.getMessages().size()).isEqualTo(3);
+    }
+
+    @Test
+    void givenHeadersWithKafkaHeadersPrefix_ExpectThemToBeRemoved() throws Exception {
+        val keyRepeat = REPEAT_PUBLISH_TAG;
+        val keyOtherHeader = KAFKA_REST_PREFIX_TAG + "anyOtherHeader";
+        var req = minimalRequest()
+            .header(keyRepeat, "1")
+            .header(keyOtherHeader, "some-value")
+            .build();
+
+        service.publish(req);
+
+        verify(producer).publish(captor.capture());
+        val captured = captor.getValue();
+        assertThat(captured.getMessages().size()).isEqualTo(1);
+        assertThat(captured.getMessages().get(0).getHeaders())
+            .doesNotContainKey(keyRepeat)
+            .doesNotContainKey(keyOtherHeader);
     }
 
     @Test

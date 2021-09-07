@@ -4,6 +4,7 @@ import com.copetti.core.KafkaRestService;
 import com.copetti.exception.InvalidRepeatValueException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -21,6 +22,7 @@ public class RestProducerController {
     static final String HEADER_BROKER_LIST = "X-KafkaRest-BrokerList";
 
     private final KafkaRestService service;
+    private final KafkaRestRequestMapper mapper;
 
     @PostMapping
     public void publish(
@@ -30,8 +32,9 @@ public class RestProducerController {
         log.info("Publishing message to brokerList: {}", brokerList);
         log.info("Public Request: {}", request);
 
-        var producerRequest = KafkaProducerMapper.mapFromRequest(brokerList, request);
-        service.publish(producerRequest);
+        val kafkaRequest = mapper.fromDTO(request, brokerList);
+        service.publish(kafkaRequest);
         log.info("Request published successfully to '{}'", request.getTopic());
     }
+
 }

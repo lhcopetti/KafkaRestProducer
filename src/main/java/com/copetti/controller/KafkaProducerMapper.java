@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class KafkaProducerMapper {
 
-    public static KafkaRestRequest mapFromRequest(final String brokerList, final PublishRequest request) {
+    public static KafkaRestRequest mapFromRequest(final String brokerList, final KafkaRestRequestDTO request) {
         return new KafkaRestRequest(request.getKey(), request.getTopic(), brokerList, request.getValue(), request.getHeaders());
     }
 

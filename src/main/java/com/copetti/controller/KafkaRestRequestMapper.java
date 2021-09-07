@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component;
 public interface KafkaRestRequestMapper {
 
     @Mapping(source = "dto.topic", target = "topicName")
-    KafkaRestRequest fromDTO(PublishRequest dto, String brokerList);
+    KafkaRestRequest fromDTO(KafkaRestRequestDTO dto, String brokerList);
 
 }

@@ -55,7 +55,7 @@ class RestProducerControllerTest {
     @Test
     void givenRequestWithCorrectParameters_ExpectUseCaseToBeCalled() throws Exception {
         var path = "/v1/publish";
-        val body = PublishRequest.builder()
+        val body = KafkaRestRequestDTO.builder()
             .key("the-key")
             .topic("the-topic")
             .value("the-value")
@@ -95,7 +95,7 @@ class RestProducerControllerTest {
     @Test
     void givenRequestWithoutTopic_expectBadRequestAndExplicitErrorMessage() throws Exception {
         var headers = new HttpHeaders();
-        var content = new ObjectMapper().writeValueAsString(new PublishRequest());
+        var content = new ObjectMapper().writeValueAsString(new KafkaRestRequestDTO());
         headers.add(HEADER_BROKER_LIST, "any-broker-list");
         var post = MockMvcRequestBuilders.post("/v1/publish")
             .headers(headers)
@@ -112,7 +112,7 @@ class RestProducerControllerTest {
     @Test
     void givenRequestWithInvalidRepeatHeader_ExpectBadRequest() throws Exception {
         var invalidHeader = Map.of(KafkaRestService.REPEAT_PUBLISH_TAG, "invalid-repeat");
-        var publishRequest = new PublishRequest(null, "the-topic", invalidHeader, "the-value");
+        var publishRequest = new KafkaRestRequestDTO(null, "the-topic", invalidHeader, "the-value");
         var content = new ObjectMapper().writeValueAsString(publishRequest);
         var post = MockMvcRequestBuilders.post("/v1/publish")
             .headers(getBrokerListHeaders())

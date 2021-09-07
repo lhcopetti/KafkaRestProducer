@@ -27,7 +27,7 @@ public class RestProducerController {
     @PostMapping
     public void publish(
         @RequestHeader(HEADER_BROKER_LIST) String brokerList,
-        @Valid @RequestBody PublishRequest request
+        @Valid @RequestBody KafkaRestRequestDTO request
                        ) throws InvalidRepeatValueException {
         log.info("Publishing message to brokerList: {}", brokerList);
         log.info("Public Request: {}", request);

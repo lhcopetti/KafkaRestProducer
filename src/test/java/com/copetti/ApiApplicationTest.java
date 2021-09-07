@@ -2,7 +2,7 @@ package com.copetti;
 
 import com.copetti.consumer.KafkaMessage;
 import com.copetti.consumer.KafkaMessageConsumer;
-import com.copetti.controller.PublishRequest;
+import com.copetti.controller.KafkaRestRequestDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-public class ApiApplicationTest {
+class ApiApplicationTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final KafkaMessageConsumer kafkaConsumer = new KafkaMessageConsumer();
@@ -48,11 +48,11 @@ public class ApiApplicationTest {
     }
 
     @Test
-    public void whenValuePayload_ExpectToBeSentToKafka() throws IOException {
+    void whenValuePayload_ExpectToBeSentToKafka() throws IOException {
         var topicName = "just-payload";
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
 
-        makePost(new PublishRequest(null, topicName, null, payload));
+        makePost(new KafkaRestRequestDTO(null, topicName, null, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
         var objOnKafka = mapper.readValue(msg.getValue(), SimpleValuePayloadTest.class);
@@ -60,12 +60,12 @@ public class ApiApplicationTest {
     }
 
     @Test
-    public void whenMessageContainsKey_ExpectToBeSentWithKey() {
+    void whenMessageContainsKey_ExpectToBeSentWithKey() {
         var topicName = "publishing-with-key";
         var key = "the-key";
         var payload = new SimpleValuePayloadTest("whatever", 33);
 
-        makePost(new PublishRequest(key, topicName, null, payload));
+        makePost(new KafkaRestRequestDTO(key, topicName, null, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
 
@@ -73,12 +73,12 @@ public class ApiApplicationTest {
     }
 
     @Test
-    public void whenPayloadWithHeaders_ExpectToBeSentToKafkaWithHeaders() throws IOException {
+    void whenPayloadWithHeaders_ExpectToBeSentToKafkaWithHeaders() throws IOException {
         var topicName = "payload-with-header";
         var payload = new SimpleValuePayloadTest("THE_EVENT_NAME", 33);
         var headers = Map.of("key1", "value1", "key2", "value2");
 
-        makePost(new PublishRequest(null, topicName, headers, payload));
+        makePost(new KafkaRestRequestDTO(null, topicName, headers, payload));
 
         KafkaMessage msg = kafkaConsumer.consumeSingleMessage(getBrokerList(), topicName);
 
@@ -87,7 +87,7 @@ public class ApiApplicationTest {
         assertThat(objOnKafka).isEqualTo(payload);
     }
 
-    private void makePost(final PublishRequest request) {
+    private void makePost(final KafkaRestRequestDTO request) {
         given()
             .contentType("application/json")
             .header("X-KafkaRest-BrokerList", getBrokerList())

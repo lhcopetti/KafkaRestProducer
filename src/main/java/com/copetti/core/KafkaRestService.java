@@ -1,5 +1,7 @@
 package com.copetti.core;
 
+import com.copetti.core.kafka.KafkaMessage;
+import com.copetti.core.kafka.KafkaPublishRequest;
 import com.copetti.exception.InvalidRepeatValueException;
 import com.copetti.provider.KafkaMessageProducer;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,29 +36,34 @@ public class KafkaRestService {
             .forEach(this::produce);
     }
 
-    private void produce(final KafkaRestRequest request) {
+    private void produce(final KafkaPublishRequest request) {
         try {
             producer.publish(request);
         } catch (InterruptedException e) {
-            log.error("The routine has been interrupted while publishing request | topic: {}, error: {}", request.getTopicName(), e.getMessage(), e);
+            log.error("The routine has been interrupted while publishing request | topic: {}, error: {}", request.getTopic(), e.getMessage(), e);
             Thread.currentThread().interrupt();
         } catch (Exception e) {
-            log.error("Exception occurred while publishing request | topic: {}, error: {}", request.getTopicName(), e.getMessage(), e);
+            log.error("Exception occurred while publishing request | topic: {}, error: {}", request.getTopic(), e.getMessage(), e);
         }
     }
 
-    private List<KafkaRestRequest> processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
+    private List<KafkaPublishRequest> processRequest(KafkaRestRequest request) throws InvalidRepeatValueException {
         var times = getRepeat(request);
 
-        val requests = new ArrayList<KafkaRestRequest>();
+        val requests = new ArrayList<KafkaPublishRequest>();
+
 
         for (var i = 0; i < times; ++i) {
-            val req = KafkaRestRequest.builder()
-                .key(request.getKey())
-                .value(request.getValue())
-                .headers(processHeaders(request.getHeaders()))
+            val req = KafkaPublishRequest.builder()
                 .brokerList(request.getBrokerList())
-                .topicName(request.getTopicName())
+                .topic(request.getTopicName())
+                .message(
+                    KafkaMessage.builder()
+                        .key(request.getKey())
+                        .value(request.getValue())
+                        .headers(processHeaders(request.getHeaders()))
+                        .build()
+                        )
                 .build();
             requests.add(req);
         }
@@ -78,6 +86,9 @@ public class KafkaRestService {
     }
 
     private Map<String, String> processHeaders(final Map<String, String> headers) {
+        if (null == headers)
+            return Collections.emptyMap();
+
         Map<String, String> enriched = enrichHeader(headers);
         return stripKafkaRestHeaders(enriched);
     }

@@ -1,6 +1,6 @@
 package com.copetti.provider;
 
-import com.copetti.core.KafkaRestRequest;
+import com.copetti.core.kafka.KafkaPublishRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class KafkaMessageProducer {
 
     private final ObjectMapper mapper;
 
-    public void publish(KafkaRestRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
+    public void publish(KafkaPublishRequest request) throws JsonProcessingException, ExecutionException, InterruptedException, TimeoutException {
         var props = properties(request.getBrokerList());
         try (var producer = new KafkaProducer<String, String>(props)) {
             produceMessage(producer, request);
@@ -38,18 +38,18 @@ public class KafkaMessageProducer {
     }
 
     private void produceMessage(final KafkaProducer<String, String> producer,
-        final KafkaRestRequest request) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
+        final KafkaPublishRequest request) throws JsonProcessingException, InterruptedException, ExecutionException, TimeoutException {
         ProducerRecord<String, String> message = createKafkaRecord(request);
         addKafkaHeaders(message, request);
         sendKafkaRecord(producer, message);
     }
 
-    private ProducerRecord<String, String> createKafkaRecord(final KafkaRestRequest request) throws JsonProcessingException {
-        return new ProducerRecord<>(request.getTopicName(), request.getKey(), mapper.writeValueAsString(request.getValue()));
+    private ProducerRecord<String, String> createKafkaRecord(final KafkaPublishRequest request) throws JsonProcessingException {
+        return new ProducerRecord<>(request.getTopic(), request.getMessage().getKey(), mapper.writeValueAsString(request.getMessage().getValue()));
     }
 
-    private <K, V> void addKafkaHeaders(final ProducerRecord<K, V> message, final KafkaRestRequest request) {
-        request.getHeaders().forEach((k, v) -> message.headers().add(k, v.getBytes()));
+    private void addKafkaHeaders(final ProducerRecord<String, String> message, final KafkaPublishRequest request) {
+        request.getMessage().getHeaders().forEach((k, v) -> message.headers().add(k, v.getBytes()));
     }
 
     private <K, V> void sendKafkaRecord(final KafkaProducer<K, V> producer,

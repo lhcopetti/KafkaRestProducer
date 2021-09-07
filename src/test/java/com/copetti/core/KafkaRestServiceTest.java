@@ -1,5 +1,6 @@
 package com.copetti.core;
 
+import com.copetti.core.kafka.KafkaPublishRequest;
 import com.copetti.exception.InvalidRepeatValueException;
 import com.copetti.provider.KafkaMessageProducer;
 import lombok.val;
@@ -29,25 +30,25 @@ class KafkaRestServiceTest {
 
     private @Mock KafkaMessageProducer producer;
 
-    private @Captor ArgumentCaptor<KafkaRestRequest> captor;
+    private @Captor ArgumentCaptor<KafkaPublishRequest> captor;
 
     @Test
     void givenHeaderWithRandomUUIDRequest_ExpectARandomUUIDToBeGenerated() throws Exception {
-        var req = KafkaRestRequest.builder()
+        var req = minimalRequest()
             .header("any-header", KafkaRestService.RANDOM_UUID_TAG)
             .build();
 
         service.publish(req);
 
         verify(producer).publish(captor.capture());
-        KafkaRestRequest captured = captor.getValue();
-        var validRandomUUID = captured.getHeaders().get("any-header");
+        val captured = captor.getValue();
+        var validRandomUUID = captured.getMessage().getHeaders().get("any-header");
         assertDoesNotThrow(() -> UUID.fromString(validRandomUUID));
     }
 
     @Test
     void givenRandomUUIDHeaderAndRepeatGreaterThanOne_ExpectDifferentUUIDForEachPublish() throws Exception {
-        var req = KafkaRestRequest.builder()
+        var req = minimalRequest()
             .header("any-header", KafkaRestService.RANDOM_UUID_TAG)
             .header(REPEAT_PUBLISH_TAG, "2")
             .build();
@@ -57,22 +58,22 @@ class KafkaRestServiceTest {
         verify(producer, times(2)).publish(captor.capture());
         val captured = captor.getAllValues();
 
-        var idFirst = captured.get(0).getHeaders().get("any-header");
-        var idSecond = captured.get(1).getHeaders().get("any-header");
+        var idFirst = captured.get(0).getMessage().getHeaders().get("any-header");
+        var idSecond = captured.get(1).getMessage().getHeaders().get("any-header");
         assertNotEquals(idFirst, idSecond);
     }
 
     @Test
     void givenHeaderWithRepeatInstruction_ExpectPublishToBeCalledThatManyTimes() throws Exception {
-        var req = KafkaRestRequest.builder()
+        var req = minimalRequest()
             .header(REPEAT_PUBLISH_TAG, "3")
             .build();
 
         service.publish(req);
 
         verify(producer, times(3)).publish(captor.capture());
-        KafkaRestRequest captured = captor.getValue();
-        assertNull(captured.getHeaders().get(REPEAT_PUBLISH_TAG));
+        val captured = captor.getValue();
+        assertNull(captured.getMessage().getHeaders().get(REPEAT_PUBLISH_TAG));
     }
 
     @Test
@@ -84,5 +85,12 @@ class KafkaRestServiceTest {
         assertThrows(InvalidRepeatValueException.class, () -> service.publish(req));
 
         verify(producer, never()).publish(captor.capture());
+    }
+
+    private KafkaRestRequest.KafkaRestRequestBuilder minimalRequest() {
+        return KafkaRestRequest.builder()
+            .topicName("the-topic")
+            .brokerList("the-broker")
+            .value("the-value");
     }
 }

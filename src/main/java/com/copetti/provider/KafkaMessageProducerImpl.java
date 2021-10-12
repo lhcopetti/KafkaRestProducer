@@ -72,10 +72,10 @@ public class KafkaMessageProducerImpl implements KafkaMessageProducer {
             .map(msg -> {
                 val callback = new KafkaFutureCallback();
                 producer.send(msg, callback);
-                return callback;
+                return callback.getFuture();
             })
             .collect(Collectors.toList())
-            .toArray(new CompletableFuture<?>[0]);
+            .toArray(new CompletableFuture[0]);
 
         CompletableFuture.allOf(futures).get(10, TimeUnit.SECONDS);
     }

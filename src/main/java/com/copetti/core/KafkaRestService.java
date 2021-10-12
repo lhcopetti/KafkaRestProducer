@@ -99,7 +99,7 @@ public class KafkaRestService {
             return entry;
 
         var uuid = UUID.randomUUID().toString();
-        log.info("Generating an UUID for header named '{}' = {}", entry.getKey(), uuid);
+        log.debug("Generating an UUID for header named '{}' = {}", entry.getKey(), uuid);
         return Map.entry(entry.getKey(), UUID.randomUUID().toString());
     }
 
